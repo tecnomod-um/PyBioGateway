@@ -1,26 +1,28 @@
 from SPARQLWrapper import SPARQLWrapper, JSON
 
 sparql_endpoint="https://2407.biogateway.eu/sparql"
-def data_processing(consulta): #Función para procesar datos
+
+def data_processing(consulta): #Function to process data
     # Endpoint SPARQL
     endpoint_sparql = sparql_endpoint
-# Inicializar SPARQLWrapper para la primera consulta
+
+    # Initialize SPARQLWrapper
     sparql = SPARQLWrapper(endpoint_sparql)
     sparql.setQuery(consulta)
     sparql.setReturnFormat(JSON)
     
-    # Realizar la primera consulta SPARQL para obtener información de las proteínas
-    resultados = sparql.query().convert()
+    #Query
+    results = sparql.query().convert()
     
-    # Procesar resultados de la primera consulta
-    resultados_procesados = []
-    for resultado in resultados['results']['bindings']:
-        resultado_procesado = {}
-        for variable in resultado.keys():
-            valor = resultado[variable]['value']
-            resultado_procesado[variable] = valor
-        resultados_procesados.append(resultado_procesado)
-    return resultados_procesados 
+    # Process results
+    processed_results = []
+    for result in results['results']['bindings']:
+        processed_result = {}
+        for variable in result.keys():
+            value = result[variable]['value']
+            processed_result[variable] = value
+        processed_results.append(processed_result)
+    return processed_results 
 
 def translate_chr(chromosome):
     ncbi_chromosome_ids = {
@@ -50,8 +52,8 @@ def translate_chr(chromosome):
     "chr-Y": "NC_000024.10",
     "mitochondrial" : "NC_012920.1"
     }
-    # Verificar si el cromosoma existe en el diccionario
+    # Check if the chromosome exists in the dictionary
     if chromosome in ncbi_chromosome_ids:
         return ncbi_chromosome_ids[chromosome]
     else:
-        return "Identificador de cromosoma no válido."
+        return "Invalid chromosome identifier."

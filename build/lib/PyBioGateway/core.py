@@ -3,33 +3,38 @@ from collections import defaultdict
 from .utils import data_processing, translate_chr
 
 sparql_endpoint= "https://2407.biogateway.eu/sparql"
+
 def type_data(instance): 
     # Endpoint SPARQL
     endpoint_sparql = sparql_endpoint
+
+    # Check prefLabel
     query = """
     PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
     PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
-    SELECT DISTINCT (REPLACE(str(?type), ".*?/", "") as ?type_id)
-        WHERE {
-            GRAPH ?graph {
-                ?uri skos:prefLabel "%s" ;
-                rdfs:subClassOf ?type .
-            }
+    SELECT DISTINCT ?type ?graph
+    WHERE {
+        GRAPH ?graph {
+            ?uri skos:prefLabel "%s" ;
+                rdfs:subClassOf ?uri_type .
+            ?uri_type skos:prefLabel ?type 
         }
+    }
     """ % (instance)
     results = data_processing(query)
     
     if len(results) == 0:
+        # Check altLabel
         query_alt_label = """
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
         SELECT DISTINCT (REPLACE(str(?type), ".*?/", "") as ?type_id)
-            WHERE {
-                GRAPH ?graph {
-                    ?uri skos:altLabel "%s" ;
+        WHERE {
+            GRAPH ?graph {
+                ?uri skos:altLabel "%s" ;
                     rdfs:subClassOf ?type .
-                }
             }
+        }
         """ % (instance)
         results = data_processing(query_alt_label)
     

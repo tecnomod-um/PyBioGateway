@@ -1,4 +1,4 @@
-Metadata-Version: 2.1
+Metadata-Version: 2.2
 Name: PyBioGateway
 Version: 0.0.1
 Summary: A Python package to perform queries and exploit the data available on BioGateway.
@@ -15,44 +15,205 @@ Description-Content-Type: text/markdown
 License-File: LICENSE
 Requires-Dist: SPARQLWrapper
 
-# PyBioGateway
 
-A Python package to perform queries and exploit the data available on BioGateway.
+# PyBioGateway <img src="figures/PyBioGateway_logo.png" align="right" width="100" />
+
+<!-- badges: start -->
+<!-- badges: end -->
+
+## Overview
+
+A Python package to perform queries and exploit the data available on [BioGateway](https://biogateway.eu/).
+
+BioGateway is an knowledge base built with RDF graphs that integrates a total of 38 resources, including biological databases and controlled vocabularies such as ontologies. This collection covers multiple biological domains of interest, as well as the relationships between them, providing a powerful resource for users to query data in the context of systems biology and subfields like the gene regulation. 
+
+[BioGateway](https://biogateway.eu/) is available for use through its last instance in one [endpoint](https://2407.biogateway.eu/sparql). The queries in the endpoint must be built using the SPARQL query language, and require basic knowledge of the KG schema. Details about this schema can be found here. A [SPARQL tutorial](https://github.com/juan-mulero/cisreg/blob/f1ea81bd3791cec60f0d9d3b4647bf5eefd4df64/SPARQL_Tutorial.pdf) is also available. To jump this gap for potential users, the following Python package was developed to provide users a programmatic access. In this way, we allow users a more user-friendly access to the data, which avoids users to delve into the network schema, as well as SPARQL skills.
+
+We also invite users to use [INTUITION](https://semantics.inf.um.es/intuition/), a webtool that also allows users to build BioGateway queries through an interactive interface. This webtool also has a tutorial for new users and more advanced users, as well as ilustrative use cases. We also encourage users to employ the [BioGateway App](https://biogateway.eu/app/), a Cytoscape plugin designed to provide easy query access to the BioGateway RDF triple store.
+
 
 ## Table of Contents
 
 - [Installation](#installation)
-- [Contributing](#contributing)
+- [Functionalities overview](#functionalities-overview)
+- [Data overview](#data-overview)
+- [Example usage detailed](#example-usage-detailedusage detailed)
 - [License](#license)
+- [Contributing](#contributing)
+- [Citation](#citation)
 - [Contact Information](#contact-information)
+
 
 ## Installation
 
-To install the package, use pip:
+To install the package, use pip after cloning and accessing the repository.
 
 ```bash
-pip install PyBioGateway
+pip install .
 ```
 
-## Contributing
 
-Interested in contributing? Check out the contributing guidelines. 
-Please note that this project is released with a Code of Conduct. 
-By contributing to this project, you agree to abide by its terms.
+## Functionalities overview
+
+Detailed documentation about functions is available [here](./docs/README.md).
+
+
+## Data overview
+
+BioGatewya integrates a total of 38 sources indicated below.
+
+**Biological domains and their databases:**
+-   **Cis-regulatory modules (CRM)**. Databases (25): CancerEnD, JEME, EnDisease, FANTOM5, FOCS, EnhancerDB, HACER, EnnhancerAtlas 2.0, ChromHMM, Ensembl 109, SEA 3.0, GenoSTAN, SEdb 2.0, scEnhancer, EnhFFL, GeneHancer 4.8, Roadmap, RAEdb, TiED, SCREEN V3, dbSUPER, DiseaseEnhancer, ENdb, Refseq V110, VISTA.
+-   **Topological associated domains (TAD)**. Databases (2): 3DGB and TADKB.
+-   **Genes**. Databases (1): Uniprot.
+-   **Proteins**. Databases (1): Uniprot.
+-   **Phenotypes**. Databases (1): Online Mendelian Inheritance in Man (OMIM).
+-   **Biological Processes**. Databases (1): Gene Ontology (GO).
+-   **Molecular functions**. Databases (1): Gene Ontology (GO).
+-   **Cellular components**. Databases (1): Gene Ontology (GO).
+-   **Taxa**. Database (1): NCBITaxon Ontology.
+
+**Relationships between biological domains and their databases:**
+-   **CRMs and target genes**. Databases (16): CancerEnD, JEME, EnDisease, FANTOM5, FOCS, HACER, EnnhancerAtlas 2.0, SEA 3.0, SEdb 2.0, scEnhancer, EnhFFL, GeneHancer 4.8, dbSUPER, DiseaseEnhancer, ENdb, VISTA.
+-   **CRMs and transcription factors (proteins)**. Databases (2): ENdb and EnhFFL.
+-   **CRMs and phenotypes**. Databases (3): DiseaseEnhancer, ENdb, EnDisease.
+-   **Genes and phenotypes**. Databases (1): Uniprot/OMIM. 
+-   **Proteins and biological processes**. Databases (1): Gene Ontology.
+-   **Proteins and molecular functions**. Databases (1): Gene Ontology.
+-   **Proteins and cellular components**. Databases (1): Gene Ontology.
+-   **Protein interactions**. Databases (1): IntAct.
+-   **Target genes and transcripcion factors (proteins)**. Databases (2): CollecTRI and TFLink.
+-   **Protein-Protein regulatory relations**. Databases (1): Signor.
+-   **Orthology proteins**. Databases (1): OrthoDB.
+
+The Molecular Interactions Ontology (MI) and the Biolink model are also included in BioGateway.
+
+
+## Example usage detailed
+
+We have one mutation of interest (rs4784227 -> chr16:52565276) and we want to study its possible implications in the regulation of gene expression in human. 
+
+First we will find the enhancers (CRMs) that are located on these coords with the function getCRMs_by_coord.
+
+```python
+from PyBioGateway import getCRMs_by_coord, crm2phen, getPhenotype, crm2gene, gene2protein, prot2bp
+
+mutation_position = 52565276
+
+# We define a range around the mutation position (e.g., +/- 1000 bases)
+range_start = mutation_position - 12500
+range_end = mutation_position + 12500
+
+#Now we use the function to get CRMs in the defined range
+crms = getCRMs_by_coord("chr-16", range_start, range_end)
+
+# We will count the number of entries in the list
+num_entries = len(crms) if isinstance(crms, list) else 0
+print(f"Number of CRMs in the specified range: {num_entries}")
+```
+Number of CRMs in the specified range: 485
+
+We will select some CRMs for continue the study, and we will see if the CRMs are related with any disease using crm2phen function:
+```python
+for crm in crms:
+    crm_name = crm['crm_name']
+    phen_results = crm2phen(crm_name)
+    if phen_results != ("No data available for the introduced crm or you may have introduced an instance that is not a crm. Check your data type with type_data function."):    
+        print(f"CRM: {crm_name}")
+        print(f"Phenotypes: {phen_results}\n")
+
+print(getPhenotype("114480"))
+```
+CRM: crm/CRMHS00000005858
+Phenotypes: [{'phen_id': 'OMIM/114480', 'database': 'http://biocc.hrbmu.edu.cn/DiseaseEnhancer/; http://health.tsinghua.edu.cn/jianglab/endisease/', 'articles': 'pubmed/23001124'}, {'phen_id': 'MESH/D001943', 'database': 'http://biocc.hrbmu.edu.cn/DiseaseEnhancer/; http://health.tsinghua.edu.cn/jianglab/endisease/', 'articles': 'pubmed/23001124'}, {'phen_id': 'DOID/DOID_1612', 'database': 'http://biocc.hrbmu.edu.cn/DiseaseEnhancer/; http://health.tsinghua.edu.cn/jianglab/endisease/', 'articles': 'pubmed/23001124'}]
+[{'phen_label': 'BREAST CANCER'}]
+
+We get the CRMs that are related to a phenotype, in this case only crm/CRMHS00000005858 is related to a disease, which is Breast cancer (OMIM:114480).
+
+We are going now to search if our CRM has any target gene using crm2gene function:
+```python
+genes=crm2gene("crm/CRMHS00000005858")
+print(genes)
+```
+[{'gene_name': 'TOX3', 'database': 'http://biocc.hrbmu.edu.cn/DiseaseEnhancer/; http://health.tsinghua.edu.cn/jianglab/endisease/', 'articles': 'pubmed/23001124'}]
+
+The gene TOX3 is related to our CRM, now we can find which proteins are encoded by this gene in *Homo sapiens* with gene2protein function:
+```python
+protein=gene2protein("TOX3","Homo sapiens")
+print(protein)
+```
+[{'prot_name': 'H3BTZ9_HUMAN'}, {'prot_name': 'J3QQQ6_HUMAN'}, {'prot_name': 'TOX3_HUMAN'}]
+
+Finally we want to know in which biological process are involved these proteins. We use prot2bp function:
+
+```python
+for prot in protein:
+    prot_name=prot['prot_name']
+    bp_results=prot2bp(prot_name)
+    print(f"Protein {prot_name}")
+    print(f"Biological process: {bp_results}\n")
+```
+Protein H3BTZ9_HUMAN
+Biological process: No data available for the introduced protein or you may have introduced an instance that is not a protein. Check your data type with type_data function.
+
+Protein J3QQQ6_HUMAN
+Biological process: No data available for the introduced protein or you may have introduced an instance that is not a protein. Check your data type with type_data function.
+
+Protein TOX3_HUMAN
+Biological process: [{'bp_id': 'GO:0006357', 'bp_label': 'regulation of transcription by RNA polymerase II', 'relation_label': 'O15405--GO:0006357', 'database': 'goa/', 'articles': 'pubmed/21873635'}, {'bp_id': 'GO:0042981', 'bp_label': 'regulation of apoptotic process', 'relation_label': 'O15405--GO:0042981', 'database': 'goa/', 'articles': 'pubmed/21172805'}, {'bp_id': 'GO:0043524', 'bp_label': 'negative regulation of neuron apoptotic process', 'relation_label': 'O15405--GO:0043524', 'database': 'goa/', 'articles': 'pubmed/21172805'}, {'bp_id': 'GO:0045944', 'bp_label': 'positive regulation of transcription by RNA polymerase II', 'relation_label': 'O15405--GO:0045944', 'database': 'goa/', 'articles': 'pubmed/21172805'}]
+
+As we can see, TOX3_HUMAN protein is related with regulation of apoptotic process, regulation of transcription by RNA polymerase II, negative regulation of neuron apoptotic process and positive regulation of transcription by RNA polymerase II. 
+
+
 
 ## License
 
-`PyBioGateway` was created by Alberto Hernández Hidalgo. It is licensed under the terms
-of the MIT license.
+PyBioGateway was created by Alberto Hernández-Hidalgo, in collaboration with [Juan Mulero-Hernández](https://orcid.org/0000-0002-6818-3443) and [Jesualdo Tomás Fernández-Breis](https://orcid.org/0000-0002-7558-2880). It is licensed under the terms of the MIT license.
+
+
+## Contributing
+
+Thank you for your interest in contributing to PyBioGateway! Here are a few guidelines to get started:
+
+### Getting Started
+
+1. Fork the repository.
+2. Clone your fork: `git clone https://github.com/AlbertoHernandezHidalgo/PyBioGateway.git`
+3. Create a new branch: `git checkout -b my-feature-branch`
+4. Make your changes.
+5. Commit your changes: `git commit -m 'Add some feature'`
+6. Push to the branch: `git push origin my-feature-branch`
+7. Submit a pull request.
+
+### Code Standards
+
+- Follow PEP 8 style guidelines.
+- Write tests for any new functionality.
+- Ensure existing tests pass.
+
+### Pull Request Process
+
+1. Ensure all tests are passing.
+2. Submit your pull request.
+3. The project maintainers will review your changes and provide feedback.
+
+Thank you for your contribution!
+
+
+## Citation
+
+> Juan Mulero-Hernández, Vladimir Mironov, José Antonio Miñarro-Giménez, Martin Kuiper, Jesualdo Tomás Fernández-Breis (2024).
+> Integration of chromosome locations and functional aspects of enhancers and topologically associating domains in knowledge graphs enables versatile queries about gene regulation.
+> Nucleic Acids Research. https://doi.org/10.1093/nar/gkae566
+
+> Erick Antezana, Ward Blondé, Mikel Egaña, Alistair Rutherford, Robert Stevens, Bernard De Baets, Vladimir Mironov, Martin Kuiper (2009).
+> BioGateway: a semantic systems biology tool for the life sciences.
+> BMC Bioinformatics. https://doi.org/10.1186/1471-2105-10-s10-s11
+
 
 ## Contact Information
 For any inquiries or issues, please contact:
 
-Alberto Hernández Hidalgo
-
-Email: albertoherhid@gmail.com
-<<<<<<< HEAD
-GitHub: https://github.com/AlbertoHernandezHidalgo
-=======
-GitHub: https://github.com/AlbertoHernandezHidalgo
->>>>>>> 75f4edbdd5b2eff0a7a1ebbd6063506734647d1a
+Alberto Hernández-Hidalgo (Lead Developer) - Email: albertoherhid@gmail.com <br>
+Juan Mulero-Hernández (Co-developer) - Email: juan.mulero@um.es <br>
+Jesualdo Tomás Fernández-Breis (Principal Investigator) - Email: jfernand@um.es
